@@ -1,0 +1,17 @@
+{
+  "name": "Postcard Generator Experiment",
+  "id": "1479114006154342367",
+  "api": "1.0.0",
+  "main": "out/code.js",
+  "capabilities": [],
+  "enableProposedApi": false,
+  "documentAccess": "dynamic-page",
+  "editorType": [
+    "figma"
+  ],
+  "networkAccess": {
+    "allowedDomains": [
+      "none"
+    ]
+  }
+}
