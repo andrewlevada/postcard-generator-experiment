@@ -1,22 +1,58 @@
-// This file holds the main code for plugins. Code in this file has access to
-// the *figma document* via the figma global object.
-// You can access browser APIs in the <script> tag inside "ui.html" which has a
-// full browser environment (See https://www.figma.com/plugin-docs/how-plugins-run).
+import { Instruction, ObjectConfig } from "./schema";
+import { hexToRgb } from "./utils";
 
-// This plugin creates rectangles on the screen.
-const numberOfRectangles = 5;
+const selection = figma.currentPage.selection[0];
 
-const nodes: SceneNode[] = [];
-for (let i = 0; i < numberOfRectangles; i++) {
-  const rect = figma.createRectangle();
-  rect.x = i * 150;
-  rect.fills = [{ type: 'SOLID', color: { r: 1, g: 0.5, b: 0 } }];
-  figma.currentPage.appendChild(rect);
-  nodes.push(rect);
+if (!selection || selection.type !== "TEXT") {
+  figma.closePlugin("Please select a text node");
+  throw new Error("No text node selected");
 }
-figma.currentPage.selection = nodes;
-figma.viewport.scrollAndZoomIntoView(nodes);
 
-// Make sure to close the plugin when you're done. Otherwise the plugin will
-// keep running, which shows the cancel button at the bottom of the screen.
-figma.closePlugin();
+const instruction = Instruction.parse(JSON.parse(selection.characters));
+
+async function generatePostcard(instruction: Instruction): Promise<SceneNode> {
+    const postcardFrame = figma.createFrame();
+    postcardFrame.resize(300, 400);
+    postcardFrame.x = 0;
+    postcardFrame.y = 0;
+    postcardFrame.fills = [{type: 'SOLID', color: hexToRgb("#D5D5D5")}];
+
+    await placeObject(instruction.header, postcardFrame, 0);
+    await placeObject(instruction.body, postcardFrame, 100);
+
+    return postcardFrame;
+}
+
+async function placeObject(objectConfig: ObjectConfig, postcardFrame: FrameNode, y: number) {
+    await figma.loadFontAsync({family: objectConfig.fontFamily, style: objectConfig.fontWeight});
+
+    const object = figma.createText();
+
+    object.fontName = {family: objectConfig.fontFamily, style: objectConfig.fontWeight};
+    object.characters = objectConfig.text;
+    object.fontSize = objectConfig.fontSize;
+    object.setRangeFills(
+        0,
+        object.characters.length,
+        [{type: 'SOLID', color: hexToRgb(objectConfig.color)}]
+    );
+
+    postcardFrame.appendChild(object);
+    object.y = y;
+}
+
+async function run() {
+    const postcard = await generatePostcard(instruction);
+
+    figma.currentPage.selection = [postcard];
+    figma.viewport.scrollAndZoomIntoView([postcard]);
+    figma.closePlugin();
+}
+
+run().then(() => {
+    figma.closePlugin();
+}).catch((error) => {
+    figma.closePlugin(error.message);
+});
+
+
