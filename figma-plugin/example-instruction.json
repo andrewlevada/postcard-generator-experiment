@@ -1,0 +1,26 @@
+{
+    "header": {
+        "position": "top-left",
+        "text": "Hello here ✨",
+        "fontSize": 32,
+        "fontWeight": "Regular",
+        "fontFamily": "Inter",
+        "color": "#000000"
+    },
+    "body": {
+        "position": "top-left",
+        "text": "This is a postcard generator experiment",
+        "fontSize": 16,
+        "fontWeight": "Regular",
+        "fontFamily": "Inter",
+        "color": "#4556F0"
+    },
+    "picture": {
+        "position": "bottom-left",
+        "url": "https://adrw.page/_next/image?url=%2F_next%2Fstatic%2Fmedia%2FE45BC8BA-FDC2-44F9-9C50-BE7648796D42_1_105_c%201.6c5016fe.png&w=1920&q=75",
+        "size": {
+            "width": 260,
+            "height": 160
+        }
+    }
+}
