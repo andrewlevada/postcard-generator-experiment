@@ -25,7 +25,6 @@ This repository is organized as a monorepo with the following components:
 - `/src` - Core model training and implementation code
 - `/modal` - Deployment configuration and code for [Modal platform](https://modal.com)
 - `/figma-plugin` - Figma plugin implementation
-- `/datasets` - Training datasets for model fine-tuning
 - `/experiments` - Jupyter notebooks and experimental code
 
 ## How to Run Locally
