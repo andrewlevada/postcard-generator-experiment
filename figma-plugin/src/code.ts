@@ -30,13 +30,19 @@ figma.ui.onmessage = async (msg) => {
     try {
         let instruction: Instruction;
         try {
-            instruction = Instruction.parse(msg.instruction);
+            // ***
+            const debug_text = msg.instruction
+            console.log("Debug text:", debug_text);
+            // ***
+            
+            instruction = Instruction.parse(debug_text);
             console.log("Validated instruction:", instruction);
             
             // Log warnings for missing fields
             if (!instruction.header) console.warn("Warning: header field is missing");
             if (!instruction.body) console.warn("Warning: body field is missing");
             if (!instruction.picture) console.warn("Warning: picture field is missing");
+            if (!instruction.layout) console.warn("Warning: layout field is missing");
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             console.error(`Invalid instruction format: ${errorMessage}\nParsed data: ${JSON.stringify(msg.instruction, null, 2)}`);
@@ -47,7 +53,8 @@ figma.ui.onmessage = async (msg) => {
         const postcard = await generatePostcard(instruction);
         figma.currentPage.selection = [postcard];
         figma.viewport.scrollAndZoomIntoView([postcard]);
-        figma.closePlugin();
+        figma.notify("✅ Done!");
+        
     } catch (error) {
         figma.notify(`Error: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -79,6 +86,9 @@ function getOrCreateFlexContainer(position: string, postcardFrame: FrameNode, fl
     const hPosition = position.split('-')[1];
 
     const container = figma.createFrame();
+    postcardFrame.appendChild(container);
+    flexContainers[position] = container;
+
     container.layoutMode = "VERTICAL";
     container.resize(postcardFrame.width - 2 * MARGIN, 1);
     container.layoutSizingVertical = "HUG";
@@ -133,8 +143,6 @@ function getOrCreateFlexContainer(position: string, postcardFrame: FrameNode, fl
     // Remove the default fill
     container.fills = []
     
-    postcardFrame.appendChild(container);
-    flexContainers[position] = container;
     return container;
 }
 
@@ -143,7 +151,10 @@ async function generatePostcard(instruction: Instruction): Promise<SceneNode> {
     postcardFrame.resize(POSTCARD_WIDTH, POSTCARD_HEIGHT);
     postcardFrame.x = 0;
     postcardFrame.y = 0;
-    postcardFrame.fills = [{type: 'SOLID', color: hexToRgb("#D5D5D5")}];
+    
+    // Use backgroundColor from layout config if available, otherwise use default
+    const backgroundColor = instruction.layout?.backgroundColor || "#D5D5D5";
+    postcardFrame.fills = [{type: 'SOLID', color: hexToRgb(backgroundColor)}];
 
     const flexContainers: ContainerStore = {};
 
@@ -151,20 +162,35 @@ async function generatePostcard(instruction: Instruction): Promise<SceneNode> {
     if (instruction.body) await placeTextObject(instruction.body, postcardFrame, flexContainers);
     if (instruction.picture) await placeImageObject(instruction.picture, postcardFrame, flexContainers);
 
+    patchContainerPositions(flexContainers, postcardFrame);
+
     return postcardFrame;
 }
 
 async function placeTextObject(textConfig: TextConfig, postcardFrame: FrameNode, flexContainers: ContainerStore) {
-    // Only load font if font properties are present
-    if (textConfig.fontFamily && textConfig.fontWeight) {
-        await figma.loadFontAsync({family: textConfig.fontFamily, style: textConfig.fontWeight});
-    }
-
     const object = figma.createText();
-    object.fontName = {
-        family: textConfig.fontFamily || "Inter",
-        style: textConfig.fontWeight || "Regular"
-    };
+
+    try {
+        await figma.loadFontAsync({family: textConfig.fontFamily, style: textConfig.fontWeight});
+
+        object.fontName = {
+            family: textConfig.fontFamily,
+            style: textConfig.fontWeight
+        };
+    } catch (error) {
+        console.warn('Failed to load font:', error);
+
+        const fallbackFont = "Inter";
+        const fallbackStyle = "Medium";
+
+        await figma.loadFontAsync({family: fallbackFont, style: fallbackStyle});
+
+        object.fontName = {
+            family: fallbackFont,
+            style: fallbackStyle
+        };
+    }
+    
     object.characters = textConfig.text || "";
     object.fontSize = textConfig.fontSize || 16;
     object.setRangeFills(
@@ -175,6 +201,16 @@ async function placeTextObject(textConfig: TextConfig, postcardFrame: FrameNode,
 
     const container = getOrCreateFlexContainer(textConfig.position || "middle-middle", postcardFrame, flexContainers);
     container.appendChild(object);
+
+    // Aligning the text with it's position
+    const alignment = textConfig.position.split('-')[1];
+    if (alignment === 'left') {
+        object.textAlignHorizontal = "LEFT";
+    } else if (alignment === 'middle') {
+        object.textAlignHorizontal = "CENTER";
+    } else if (alignment === 'right') {
+        object.textAlignHorizontal = "RIGHT";
+    }
 
     // Fit the text to the container
     object.textAutoResize = "WIDTH_AND_HEIGHT";
@@ -216,8 +252,18 @@ async function placeImageObject(imageConfig: ImageConfig, postcardFrame: FrameNo
             placeholder.remove();
             imageFrame.fills = [{type: 'IMAGE', imageHash: image.hash, scaleMode: 'FILL'}];
         } catch (error) {
-            console.error('Failed to load image:', error);
+            console.warn('Failed to load image:', error);
             // Keep the placeholder if image loading fails
         }
+    }
+}
+
+function patchContainerPositions(flexContainers: ContainerStore, postcardFrame: FrameNode) {
+    for (const position of Object.keys(flexContainers)) {
+        const container = flexContainers[position];
+        const pos = calculatePosition(position, postcardFrame.width, postcardFrame.height, container.width, container.height);
+        
+        container.x = pos.x;
+        container.y = pos.y;
     }
 }

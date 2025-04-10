@@ -1,5 +1,5 @@
 export function loadApiToken(page: PageNode): string | null {
-    const lastNode = page.children[page.children.length - 1];
+    const lastNode = page.children[0];
 
     if (lastNode.type !== 'TEXT') return null;
 

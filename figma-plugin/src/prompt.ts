@@ -21,9 +21,12 @@ The JSON should follow this structure:
   "picture": {
     "position": string, // Same position options as header
     "size": {
-      "width": number, // Between 100 and 300
-      "height": number // Between 100 and 300
+      "width": number, // Between 80 and 200
+      "height": number // Between 80 and 200
     }
+  },
+  "layout": {
+    "backgroundColor": string // Hex color code for the postcard background
   }
 }
 
@@ -31,10 +34,10 @@ Guidelines:
 1. The header should be a short, impactful message in Russian
 2. The body should contain a longer, more detailed message in Russian
 3. Choose colors that complement each other and match the celebration theme
-4. Select an image URL that's relevant to the celebration
-5. Position elements to create a balanced, visually appealing layout
-6. Use appropriate font sizes to establish visual hierarchy
-7. Ensure all text is readable and properly spaced
+4. Position elements to create a balanced, visually appealing layout, but experiment
+5. Use appropriate font sizes to establish visual hierarchy
+6. Ensure all text is readable
+7. Select a background color that is subtle and contrasts with the header and body text
 
 Theme: {theme}
 Person's Name: {name}

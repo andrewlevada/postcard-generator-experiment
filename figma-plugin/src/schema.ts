@@ -24,10 +24,17 @@ export const ImageConfig = z.object({
 
 export type ImageConfig = z.infer<typeof ImageConfig>;
 
+export const LayoutConfig = z.object({
+    backgroundColor: z.string().default("#D5D5D5").catch("#D5D5D5")
+});
+
+export type LayoutConfig = z.infer<typeof LayoutConfig>;
+
 export const Instruction = z.object({
     header: TextConfig.optional(),
     body: TextConfig.optional(),
     picture: ImageConfig.optional(),
+    layout: LayoutConfig.optional()
 })
 
 export type Instruction = z.infer<typeof Instruction>;

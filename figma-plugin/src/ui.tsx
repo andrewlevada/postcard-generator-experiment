@@ -20,6 +20,7 @@ async function generatePostcardInstruction(data: FormData, apiToken: string): Pr
     },
     body: JSON.stringify({
       model: 'openai/gpt-4',
+      temperature: 1.05,
       messages: [
         {
           role: 'user',
@@ -39,8 +40,8 @@ async function generatePostcardInstruction(data: FormData, apiToken: string): Pr
 
 export function App() {
   const [formData, setFormData] = React.useState<FormData>({
-    theme: '',
-    name: ''
+    theme: 'День рождения',
+    name: 'Кот Крыжовник'
   });
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -70,6 +71,7 @@ export function App() {
       }, '*');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error(err);
     } finally {
       setLoading(false);
     }
