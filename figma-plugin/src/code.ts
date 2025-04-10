@@ -1,45 +1,84 @@
 import { Instruction, ImageConfig, TextConfig } from "./schema";
 import { hexToRgb } from "./utils";
 
+type ContainerStore = Record<string, FrameNode>;
+
 // Hardcoded constants
 const POSTCARD_WIDTH = 300;
 const POSTCARD_HEIGHT = 400;
 const MARGIN = 20;
 const ITEM_SPACING = 4;
 
-const selection = figma.currentPage.selection[0];
+// Show the UI
+figma.showUI(__html__, { width: 300, height: 150 });
 
-if (!selection || selection.type !== "TEXT") {
-  figma.closePlugin("Please select a text node");
-  throw new Error("No text node selected");
-}
+// Handle messages from the UI
+figma.ui.onmessage = async (msg) => {
+  if (msg.type === 'create-postcard') {
+    try {
+        const selection = `{
+            "header": {
+            "position": "top-left",
+            "text": "${msg.header}",
+            "fontSize": 32,
+            "fontWeight": "Regular",
+            "fontFamily": "Inter",
+            "color": "#000000"
+            },
+            "body": {
+            "position": "top-left",
+            "text": "This is a postcard generator experiment",
+            "fontSize": 16,
+            "fontWeight": "Regular",
+            "fontFamily": "Inter",
+            "color": "#4556F0"
+            },
+            "picture": {
+            "position": "bottom-left",
+            "url": "https://adrw.page/_next/image?url=%2F_next%2Fstatic%2Fmedia%2FE45BC8BA-FDC2-44F9-9C50-BE7648796D42_1_105_c%201.6c5016fe.png&w=1920&q=75",
+            "size": {
+                "width": 260,
+                "height": 160
+            }
+            }
+        }`
 
-let parsedData: unknown;
-try {
-    parsedData = JSON.parse(selection.characters);
-    console.log("Parsed data:", parsedData);
-} catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`Invalid JSON in text node: ${errorMessage}\nText content: ${selection.characters}`);
-    figma.closePlugin("Error in console");
-    throw error;
-}
+        let parsedData: unknown;
+        try {
+            parsedData = JSON.parse(selection);
+            console.log("Parsed data:", parsedData);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error(`Invalid JSON in text node: ${errorMessage}\nText content: ${selection}`);
+            figma.closePlugin("Error in console");
+            throw error;
+        }
 
-let instruction: Instruction;
-try {
-    instruction = Instruction.parse(parsedData);
-    console.log("Validated instruction:", instruction);
-    
-    // Log warnings for missing fields
-    if (!instruction.header) console.warn("Warning: header field is missing");
-    if (!instruction.body) console.warn("Warning: body field is missing");
-    if (!instruction.picture) console.warn("Warning: picture field is missing");
-} catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`Invalid instruction format: ${errorMessage}\nParsed data: ${JSON.stringify(parsedData, null, 2)}`);
-    figma.closePlugin("Error in console");
-    throw error;
-}
+        let instruction: Instruction;
+        try {
+            instruction = Instruction.parse(parsedData);
+            console.log("Validated instruction:", instruction);
+            
+            // Log warnings for missing fields
+            if (!instruction.header) console.warn("Warning: header field is missing");
+            if (!instruction.body) console.warn("Warning: body field is missing");
+            if (!instruction.picture) console.warn("Warning: picture field is missing");
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error(`Invalid instruction format: ${errorMessage}\nParsed data: ${JSON.stringify(parsedData, null, 2)}`);
+            figma.closePlugin("Error in console");
+            throw error;
+        }
+
+        const postcard = await generatePostcard(instruction);
+        figma.currentPage.selection = [postcard];
+        figma.viewport.scrollAndZoomIntoView([postcard]);
+        figma.closePlugin();
+    } catch (error) {
+        figma.notify(`Error: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+};
 
 function calculatePosition(position: string, frameWidth: number, frameHeight: number, elementWidth: number, elementHeight: number) {
     const positions = {
@@ -57,9 +96,7 @@ function calculatePosition(position: string, frameWidth: number, frameHeight: nu
     return positions[position as keyof typeof positions];
 }
 
-const flexContainers: Record<string, FrameNode> = {};
-
-function getOrCreateFlexContainer(position: string, postcardFrame: FrameNode): FrameNode {
+function getOrCreateFlexContainer(position: string, postcardFrame: FrameNode, flexContainers: ContainerStore): FrameNode {
     if (flexContainers[position]) {
         return flexContainers[position];
     }
@@ -134,14 +171,16 @@ async function generatePostcard(instruction: Instruction): Promise<SceneNode> {
     postcardFrame.y = 0;
     postcardFrame.fills = [{type: 'SOLID', color: hexToRgb("#D5D5D5")}];
 
-    if (instruction.header) await placeObject(instruction.header, postcardFrame);
-    if (instruction.body) await placeObject(instruction.body, postcardFrame);
-    if (instruction.picture) await placeObject(instruction.picture, postcardFrame);
+    const flexContainers: ContainerStore = {};
+
+    if (instruction.header) await placeObject(instruction.header, postcardFrame, flexContainers);
+    if (instruction.body) await placeObject(instruction.body, postcardFrame, flexContainers);
+    if (instruction.picture) await placeObject(instruction.picture, postcardFrame, flexContainers);
 
     return postcardFrame;
 }
 
-async function placeObject(objectConfig: TextConfig | ImageConfig, postcardFrame: FrameNode) {
+async function placeObject(objectConfig: TextConfig | ImageConfig, postcardFrame: FrameNode, flexContainers: ContainerStore) {
     if (TextConfig.safeParse(objectConfig).success) {
         const textConfig = objectConfig as TextConfig;
         // Only load font if font properties are present
@@ -162,7 +201,7 @@ async function placeObject(objectConfig: TextConfig | ImageConfig, postcardFrame
             [{type: 'SOLID', color: hexToRgb(textConfig.color || "#000000")}]
         );
 
-        const container = getOrCreateFlexContainer(textConfig.position || "middle-middle", postcardFrame);
+        const container = getOrCreateFlexContainer(textConfig.position || "middle-middle", postcardFrame, flexContainers);
         container.appendChild(object);
 
         // Fit the text to the container
@@ -182,7 +221,7 @@ async function placeObject(objectConfig: TextConfig | ImageConfig, postcardFrame
             imageConfig.size?.height || 200
         );
         
-        const container = getOrCreateFlexContainer(imageConfig.position || "middle-middle", postcardFrame);
+        const container = getOrCreateFlexContainer(imageConfig.position || "middle-middle", postcardFrame, flexContainers);
         container.appendChild(imageFrame);
 
         // Create a placeholder rectangle first
@@ -215,19 +254,3 @@ async function placeObject(objectConfig: TextConfig | ImageConfig, postcardFrame
         }
     }
 }
-
-async function run() {
-    const postcard = await generatePostcard(instruction);
-
-    figma.currentPage.selection = [postcard];
-    figma.viewport.scrollAndZoomIntoView([postcard]);
-    figma.closePlugin();
-}
-
-run().then(() => {
-    figma.closePlugin();
-}).catch((error) => {
-    figma.closePlugin(error.message);
-});
-
-
