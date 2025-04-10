@@ -1,4 +1,5 @@
 import { Instruction, ImageConfig, TextConfig } from "./schema";
+import { loadApiToken } from "./token-loader"
 import { hexToRgb } from "./utils";
 
 type ContainerStore = Record<string, FrameNode>;
@@ -10,53 +11,26 @@ const MARGIN = 20;
 const ITEM_SPACING = 4;
 
 // Show the UI
-figma.showUI(__html__, { width: 300, height: 150 });
+figma.showUI(__html__, { width: 300, height: 560 });
+
+// Get the API token and pass it to the UI
+const apiToken = loadApiToken(figma.currentPage);
+if (!apiToken) {
+    figma.closePlugin("Error: No API token found! Place it as a text layer in the current page please");
+} else {
+    figma.ui.postMessage({
+        type: 'api-token',
+        apiToken: apiToken
+    });
+}
 
 // Handle messages from the UI
 figma.ui.onmessage = async (msg) => {
   if (msg.type === 'create-postcard') {
     try {
-        const selection = `{
-            "header": {
-            "position": "top-left",
-            "text": "${msg.header}",
-            "fontSize": 32,
-            "fontWeight": "Regular",
-            "fontFamily": "Inter",
-            "color": "#000000"
-            },
-            "body": {
-            "position": "top-left",
-            "text": "This is a postcard generator experiment",
-            "fontSize": 16,
-            "fontWeight": "Regular",
-            "fontFamily": "Inter",
-            "color": "#4556F0"
-            },
-            "picture": {
-            "position": "bottom-left",
-            "url": "https://adrw.page/_next/image?url=%2F_next%2Fstatic%2Fmedia%2FE45BC8BA-FDC2-44F9-9C50-BE7648796D42_1_105_c%201.6c5016fe.png&w=1920&q=75",
-            "size": {
-                "width": 260,
-                "height": 160
-            }
-            }
-        }`
-
-        let parsedData: unknown;
-        try {
-            parsedData = JSON.parse(selection);
-            console.log("Parsed data:", parsedData);
-        } catch (error: unknown) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            console.error(`Invalid JSON in text node: ${errorMessage}\nText content: ${selection}`);
-            figma.closePlugin("Error in console");
-            throw error;
-        }
-
         let instruction: Instruction;
         try {
-            instruction = Instruction.parse(parsedData);
+            instruction = Instruction.parse(msg.instruction);
             console.log("Validated instruction:", instruction);
             
             // Log warnings for missing fields
@@ -65,7 +39,7 @@ figma.ui.onmessage = async (msg) => {
             if (!instruction.picture) console.warn("Warning: picture field is missing");
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
-            console.error(`Invalid instruction format: ${errorMessage}\nParsed data: ${JSON.stringify(parsedData, null, 2)}`);
+            console.error(`Invalid instruction format: ${errorMessage}\nParsed data: ${JSON.stringify(msg.instruction, null, 2)}`);
             figma.closePlugin("Error in console");
             throw error;
         }

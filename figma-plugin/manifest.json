@@ -9,7 +9,8 @@
   ],
   "networkAccess": {
     "allowedDomains": [
-      "https://adrw.page"
+      "https://adrw.page",
+      "https://openrouter.ai"
     ]
   }
 }

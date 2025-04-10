@@ -45,7 +45,7 @@ export default defineConfig({
     outDir: 'out',
     rollupOptions: {
       input: {
-        'ui': resolve(__dirname, 'src/ui/ui.tsx'),
+        'ui': resolve(__dirname, 'src/ui.tsx'),
         'code': resolve(__dirname, 'src/code.ts'),
       },
       output: {
