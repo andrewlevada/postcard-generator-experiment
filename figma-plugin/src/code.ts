@@ -173,84 +173,77 @@ async function generatePostcard(instruction: Instruction): Promise<SceneNode> {
 
     const flexContainers: ContainerStore = {};
 
-    if (instruction.header) await placeObject(instruction.header, postcardFrame, flexContainers);
-    if (instruction.body) await placeObject(instruction.body, postcardFrame, flexContainers);
-    if (instruction.picture) await placeObject(instruction.picture, postcardFrame, flexContainers);
+    if (instruction.header) await placeTextObject(instruction.header, postcardFrame, flexContainers);
+    if (instruction.body) await placeTextObject(instruction.body, postcardFrame, flexContainers);
+    if (instruction.picture) await placeImageObject(instruction.picture, postcardFrame, flexContainers);
 
     return postcardFrame;
 }
 
-async function placeObject(objectConfig: TextConfig | ImageConfig, postcardFrame: FrameNode, flexContainers: ContainerStore) {
-    if (TextConfig.safeParse(objectConfig).success) {
-        const textConfig = objectConfig as TextConfig;
-        // Only load font if font properties are present
-        if (textConfig.fontFamily && textConfig.fontWeight) {
-            await figma.loadFontAsync({family: textConfig.fontFamily, style: textConfig.fontWeight});
-        }
-
-        const object = figma.createText();
-        object.fontName = {
-            family: textConfig.fontFamily || "Inter",
-            style: textConfig.fontWeight || "Regular"
-        };
-        object.characters = textConfig.text || "";
-        object.fontSize = textConfig.fontSize || 16;
-        object.setRangeFills(
-            0,
-            object.characters.length,
-            [{type: 'SOLID', color: hexToRgb(textConfig.color || "#000000")}]
-        );
-
-        const container = getOrCreateFlexContainer(textConfig.position || "middle-middle", postcardFrame, flexContainers);
-        container.appendChild(object);
-
-        // Fit the text to the container
-        object.textAutoResize = "WIDTH_AND_HEIGHT";
-        object.resize(container.width, object.height);
-
-        return;
+async function placeTextObject(textConfig: TextConfig, postcardFrame: FrameNode, flexContainers: ContainerStore) {
+    // Only load font if font properties are present
+    if (textConfig.fontFamily && textConfig.fontWeight) {
+        await figma.loadFontAsync({family: textConfig.fontFamily, style: textConfig.fontWeight});
     }
 
-    if (ImageConfig.safeParse(objectConfig).success) {
-        const imageConfig = objectConfig as ImageConfig;
-        
-        // Create a frame to hold the image
-        const imageFrame = figma.createFrame();
-        imageFrame.resize(
-            imageConfig.size?.width || 200,
-            imageConfig.size?.height || 200
-        );
-        
-        const container = getOrCreateFlexContainer(imageConfig.position || "middle-middle", postcardFrame, flexContainers);
-        container.appendChild(imageFrame);
+    const object = figma.createText();
+    object.fontName = {
+        family: textConfig.fontFamily || "Inter",
+        style: textConfig.fontWeight || "Regular"
+    };
+    object.characters = textConfig.text || "";
+    object.fontSize = textConfig.fontSize || 16;
+    object.setRangeFills(
+        0,
+        object.characters.length,
+        [{type: 'SOLID', color: hexToRgb(textConfig.color || "#000000")}]
+    );
 
-        // Create a placeholder rectangle first
-        const placeholder = figma.createRectangle();
-        placeholder.resize(
-            imageConfig.size?.width || 200,
-            imageConfig.size?.height || 200
-        );
-        placeholder.fills = [{type: 'SOLID', color: hexToRgb("#CCCCCC")}];
-        imageFrame.appendChild(placeholder);
+    const container = getOrCreateFlexContainer(textConfig.position || "middle-middle", postcardFrame, flexContainers);
+    container.appendChild(object);
 
-        // Only try to fetch image if URL is present
-        if (imageConfig.url) {
-            try {
-                const response = await fetch(imageConfig.url);
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
-                }
-                const arrayBuffer = await response.arrayBuffer();
-                const imageData = new Uint8Array(arrayBuffer);
-                const image = figma.createImage(imageData);
-                
-                // Remove the placeholder and set the image
-                placeholder.remove();
-                imageFrame.fills = [{type: 'IMAGE', imageHash: image.hash, scaleMode: 'FILL'}];
-            } catch (error) {
-                console.error('Failed to load image:', error);
-                // Keep the placeholder if image loading fails
+    // Fit the text to the container
+    object.textAutoResize = "WIDTH_AND_HEIGHT";
+    object.resize(container.width, object.height);
+}
+
+async function placeImageObject(imageConfig: ImageConfig, postcardFrame: FrameNode, flexContainers: ContainerStore) {
+    // Create a frame to hold the image
+    const imageFrame = figma.createFrame();
+    imageFrame.resize(
+        imageConfig.size?.width || 200,
+        imageConfig.size?.height || 200
+    );
+    
+    const container = getOrCreateFlexContainer(imageConfig.position || "middle-middle", postcardFrame, flexContainers);
+    container.appendChild(imageFrame);
+
+    // Create a placeholder rectangle first
+    const placeholder = figma.createRectangle();
+    placeholder.resize(
+        imageConfig.size?.width || 200,
+        imageConfig.size?.height || 200
+    );
+    placeholder.fills = [{type: 'SOLID', color: hexToRgb("#CCCCCC")}];
+    imageFrame.appendChild(placeholder);
+
+    // Only try to fetch image if URL is present
+    if (imageConfig.url) {
+        try {
+            const response = await fetch(imageConfig.url);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
             }
+            const arrayBuffer = await response.arrayBuffer();
+            const imageData = new Uint8Array(arrayBuffer);
+            const image = figma.createImage(imageData);
+            
+            // Remove the placeholder and set the image
+            placeholder.remove();
+            imageFrame.fills = [{type: 'IMAGE', imageHash: image.hash, scaleMode: 'FILL'}];
+        } catch (error) {
+            console.error('Failed to load image:', error);
+            // Keep the placeholder if image loading fails
         }
     }
 }
