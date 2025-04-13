@@ -8,10 +8,28 @@ interface FormData {
   imageFile: File | null;
 }
 
-async function generatePostcardInstruction(data: FormData, apiToken: string): Promise<string> {
+// Function to randomly select background lightness
+function getRandomLightness(): string {
+  return Math.random() > 0.5 ? 'bright' : 'dark';
+}
+
+// Function to randomly select background hue
+function getRandomHue(): string {
+  const hues = [
+    'red', 'orange', 'yellow', 'green', 'teal', 'cyan', 
+    'blue', 'indigo', 'violet', 'purple', 'pink', 'magenta',
+    'brown', 'gray', 'black', 'white', 'gold', 'silver',
+    'maroon', 'olive'
+  ];
+  return hues[Math.floor(Math.random() * hues.length)];
+}
+
+async function generatePostcardInstruction(data: FormData, apiToken: string, backgroundLightness: string, backgroundHue: string): Promise<string> {
   const prompt = POSTCARD_PROMPT
     .replace('{theme}', data.theme)
-    .replace('{name}', data.name);
+    .replace('{name}', data.name)
+    .replace('{backgroundLightness}', backgroundLightness)
+    .replace('{backgroundHue}', backgroundHue);
 
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
@@ -39,9 +57,9 @@ async function generatePostcardInstruction(data: FormData, apiToken: string): Pr
   return result.choices[0].message.content;
 }
 
-async function generatePostcardContent(theme: string, name: string): Promise<{poem: string, background_image: string | null}> {
-  // Call the new combined API endpoint
-  const url = `https://andrewlevada--postcard-content-postcardcontentgenerator--6a7463.modal.run/?theme=${encodeURIComponent(theme)}&title=${encodeURIComponent(name)}&background_prompt=${encodeURIComponent(theme + " themed background for a postcard")}`;
+async function generatePostcardContent(theme: string, name: string, backgroundLightness: string, backgroundHue: string): Promise<{poem: string, background_image: string | null}> {
+  const backgroundPrompt = `${backgroundLightness} ${backgroundHue} themed background for a postcard`;
+  const url = `https://andrewlevada--postcard-content-postcardcontentgenerator--6a7463.modal.run/?theme=${encodeURIComponent(theme)}&title=${encodeURIComponent(name)}&background_prompt=${encodeURIComponent(backgroundPrompt)}`;
   
   const response = await fetch(url);
   
@@ -81,6 +99,10 @@ export function App() {
     setError(null);
 
     try {
+      // Generate random background properties
+      const backgroundLightness = getRandomLightness();
+      const backgroundHue = getRandomHue();
+      
       let imageUrl = '';
       if (formData.imageFile) {
         // Convert the file to a data URL
@@ -93,8 +115,8 @@ export function App() {
 
       // Fetch both the postcard instruction and the content in parallel
       const [instruction, content] = await Promise.all([
-        generatePostcardInstruction(formData, apiToken),
-        generatePostcardContent(formData.theme, formData.name)
+        generatePostcardInstruction(formData, apiToken, backgroundLightness, backgroundHue),
+        generatePostcardContent(formData.theme, formData.name, backgroundLightness, backgroundHue)
       ]);
       
       // Parse the instruction
@@ -115,8 +137,12 @@ export function App() {
       if (content.background_image) {
         parsedInstruction.background = {
           url: content.background_image,
-          blur: 100,
-          color: parsedInstruction.layout?.backgroundColor || "#D5D5D5"
+          // blur: 100,
+          color: parsedInstruction.layout?.backgroundColor || "#D5D5D5",
+          fillLayer: {
+            color: backgroundLightness === 'bright' ? "#000000" : "#FFFFFF",
+            opacity: 0.08
+          }
         };
       }
       

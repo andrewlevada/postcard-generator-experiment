@@ -26,8 +26,12 @@ export type ImageConfig = z.infer<typeof ImageConfig>;
 
 export const BackgroundConfig = z.object({
     url: z.string().optional(),
-    blur: z.number().default(100).catch(100),
-    color: z.string().default("#D5D5D5").catch("#D5D5D5")
+    blur: z.number().optional(),
+    color: z.string().default("#D5D5D5").catch("#D5D5D5"),
+    fillLayer: z.object({
+        color: z.string().default("#FFFFFF").catch("#FFFFFF"),
+        opacity: z.number().default(0.08).catch(0.08)
+    }).optional()
 });
 
 export type BackgroundConfig = z.infer<typeof BackgroundConfig>;

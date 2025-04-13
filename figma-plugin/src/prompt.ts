@@ -21,8 +21,8 @@ The JSON should follow this structure:
   "picture": {
     "position": string, // Same position options as header
     "size": {
-      "width": number, // Between 80 and 200
-      "height": number // Between 80 and 200
+      "width": number, // Between 100 and 280
+      "height": number // Between 100 and 280
     }
   },
   "background": {
@@ -44,6 +44,7 @@ Guidelines:
 8. When position of two elements is the same, they are stacked vertically. This is generally good
 9. You must place body and picture in the same position
 10. The background color should complement the theme and provide good contrast for text
+11. IMPORTANT: The background will be {backgroundLightness} and {backgroundHue} themed. Make sure the text colors are in a similar hue family but with opposite lightness (if background is bright, use dark text; if background is dark, use bright text) for good contrast and coherence.
 
 Theme: {theme}
 Person's Name: {name}

@@ -8,7 +8,7 @@ type ContainerStore = Record<string, FrameNode>;
 const POSTCARD_WIDTH = 400;
 const POSTCARD_HEIGHT = 520;
 const MARGIN = 32;
-const ITEM_SPACING = 10;
+const ITEM_SPACING = 20;
 
 // Show the UI
 figma.showUI(__html__, { width: 300, height: 560 });
@@ -212,6 +212,24 @@ async function placeBackgroundObject(backgroundConfig: BackgroundConfig, postcar
                     radius: backgroundConfig.blur,
                     visible: true
                 }];
+            }
+            
+            // Add fill layer overlay if specified
+            if (backgroundConfig.fillLayer) {
+                const fillLayer = figma.createRectangle();
+                fillLayer.resize(POSTCARD_WIDTH, POSTCARD_HEIGHT);
+                fillLayer.x = 0;
+                fillLayer.y = 0;
+                
+                // Set the fill color and opacity
+                fillLayer.fills = [{
+                    type: 'SOLID', 
+                    color: hexToRgb(backgroundConfig.fillLayer.color || "#FFFFFF"),
+                    opacity: backgroundConfig.fillLayer.opacity || 0.1
+                }];
+                
+                // Add the fill layer on top of the background
+                backgroundFrame.appendChild(fillLayer);
             }
         } catch (error) {
             console.warn('Failed to load background image:', error);
