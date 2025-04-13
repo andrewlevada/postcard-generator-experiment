@@ -24,6 +24,8 @@ This repository is organized as a monorepo with the following components:
 
 - `/src` - Core model training and implementation code
 - `/modal` - Deployment configuration and code for [Modal platform](https://modal.com)
+  - `/modal/poem-llm` - Serverless deployment of the poem generation model using Modal
+  - `/modal/background-diffusion` - Serverless deployment of the background generation model using Stable Diffusion
 - `/figma-plugin` - Figma plugin implementation
 - `/experiments` - Jupyter notebooks and experimental code
 

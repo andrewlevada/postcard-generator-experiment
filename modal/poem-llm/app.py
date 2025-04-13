@@ -10,7 +10,7 @@ if os.environ.get("MODAL_IS_REMOTE") == "1":
 
 # Define constants
 MODEL_NAME = "Nazgulitos/poem-gemma2-lora-model"
-GPU_TYPE = "h100"
+GPU_TYPE = "A100-40GB"
 GPU_COUNT = 1
 GPU_CONFIG = f"{GPU_TYPE}:{GPU_COUNT}"
 MAX_SEQ_LENGTH = 2048
