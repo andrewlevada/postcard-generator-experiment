@@ -1,8 +1,8 @@
 import modal
 import time
 from uuid import uuid4
-
 import os
+import torch
 
 if os.environ.get("MODAL_IS_REMOTE") == "1":
     from unsloth import FastLanguageModel
@@ -10,7 +10,7 @@ if os.environ.get("MODAL_IS_REMOTE") == "1":
 
 # Define constants
 MODEL_NAME = "Nazgulitos/poem-gemma2-lora-model"
-GPU_TYPE = "a10g"  # You can change this based on your needs
+GPU_TYPE = "h100"
 GPU_COUNT = 1
 GPU_CONFIG = f"{GPU_TYPE}:{GPU_COUNT}"
 MAX_SEQ_LENGTH = 2048
@@ -31,20 +31,29 @@ app = modal.App("poem-generator")
 @app.cls(
     gpu=GPU_CONFIG,
     image=image,
+    # Keep containers warm for longer to reduce cold starts
+    scaledown_window=120,  # 2 minutes
 )
 class PoemGenerator:
     @modal.enter()
     def load_model(self):
         """Load the model when the container starts."""
         print("Loading model with Unsloth optimizations...")
+        
+        # Pre-allocate CUDA memory to avoid fragmentation
+        torch.cuda.empty_cache()
+        
+        # Load model with optimized settings
         self.model, self.tokenizer = FastLanguageModel.from_pretrained(
             model_name=MODEL_NAME,
             max_seq_length=MAX_SEQ_LENGTH,
             dtype=None,
             load_in_4bit=LOAD_IN_4BIT,
         )
-        FastLanguageModel.for_inference(self.model)  # Enable native 2x faster inference
-        print("Model loaded successfully!")
+        
+        # Enable native 2x faster inference
+        FastLanguageModel.for_inference(self.model)
+        print("Model loaded and warmed up successfully!")
 
     @modal.fastapi_endpoint(method="GET", docs=True)
     def status(self):
