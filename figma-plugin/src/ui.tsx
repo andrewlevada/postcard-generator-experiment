@@ -38,6 +38,19 @@ async function generatePostcardInstruction(data: FormData, apiToken: string): Pr
   return result.choices[0].message.content;
 }
 
+async function generatePoem(theme: string, name: string): Promise<string> {
+  const url = `https://andrewlevada--poem-generator-poemgenerator-generate-poem.modal.run/?theme=${encodeURIComponent(theme)}&title=${encodeURIComponent(name)}`;
+  
+  const response = await fetch(url);
+  
+  if (!response.ok) {
+    throw new Error(`Poem API call failed: ${response.statusText}`);
+  }
+  
+  const result = await response.json();
+  return result.text || '';
+}
+
 export function App() {
   const [formData, setFormData] = React.useState<FormData>({
     theme: 'День рождения',
@@ -62,11 +75,29 @@ export function App() {
     setError(null);
 
     try {
-      const instruction = await generatePostcardInstruction(formData, apiToken);
+      // Fetch both the postcard instruction and the poem in parallel
+      const [instruction, poemText] = await Promise.all([
+        generatePostcardInstruction(formData, apiToken),
+        generatePoem(formData.theme, formData.name)
+      ]);
+      
+      // Parse the instruction
+      const parsedInstruction = JSON.parse(instruction);
+      
+      // If the instruction has a body field, replace its text with the poem
+      if (parsedInstruction.body) {
+        parsedInstruction.body.text = poemText;
+      } else {
+        // If there's no body field, create one with the poem
+        parsedInstruction.body = {
+          text: poemText
+        };
+      }
+      
       parent.postMessage({ 
         pluginMessage: { 
           type: 'create-postcard',
-          instruction: JSON.parse(instruction)
+          instruction: parsedInstruction
         }
       }, '*');
     } catch (err) {
