@@ -34,6 +34,7 @@ This repository is organized as a monorepo with the following components:
   - `/modal/postcard-content` - Serverless deployment of content in the postcard
 - `/figma-plugin` - Figma plugin implementation
 - `/experiments` - Jupyter notebooks and experimental code
+- `/datasets` - datasets used for fine-tuning
 
 ## [GitHub link](https://github.com/andrewlevada/postcard-generator-experiment/tree/main)
 
