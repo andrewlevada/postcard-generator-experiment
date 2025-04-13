@@ -13,7 +13,7 @@ The JSON should follow this structure:
   "body": {
     "position": string, // Same position options as header
     "text": string, // A longer message or description in Russian
-    "fontSize": number, // Between 8 and 16
+    "fontSize": number, // Between 8 and 12
     "fontWeight": string, // Same options as header
     "fontFamily": string, // Same options as header
     "color": string // Hex color code
@@ -38,6 +38,7 @@ Guidelines:
 5. Use appropriate font sizes to establish visual hierarchy
 6. Ensure all text is readable
 7. Select a background color that is subtle and contrasts with the header and body text
+8. When position of two elements is the same, they are stacked vertically. This is generally good
 
 Theme: {theme}
 Person's Name: {name}

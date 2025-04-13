@@ -20,7 +20,7 @@ async function generatePostcardInstruction(data: FormData, apiToken: string): Pr
     },
     body: JSON.stringify({
       model: 'openai/gpt-4',
-      temperature: 1.05,
+      temperature: 1.1,
       messages: [
         {
           role: 'user',
@@ -48,7 +48,8 @@ async function generatePoem(theme: string, name: string): Promise<string> {
   }
   
   const result = await response.json();
-  return result.text || '';
+  const poem = result.poem || '';
+  return poem.replace(/\n\n/g, '\n');
 }
 
 export function App() {
@@ -83,15 +84,9 @@ export function App() {
       
       // Parse the instruction
       const parsedInstruction = JSON.parse(instruction);
-      
-      // If the instruction has a body field, replace its text with the poem
-      if (parsedInstruction.body) {
-        parsedInstruction.body.text = poemText;
-      } else {
-        // If there's no body field, create one with the poem
-        parsedInstruction.body = {
-          text: poemText
-        };
+
+      if (poemText) {
+        parsedInstruction.body = { ...parsedInstruction.body, text: poemText };
       }
       
       parent.postMessage({ 
