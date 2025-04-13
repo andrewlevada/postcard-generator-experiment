@@ -24,6 +24,14 @@ export const ImageConfig = z.object({
 
 export type ImageConfig = z.infer<typeof ImageConfig>;
 
+export const BackgroundConfig = z.object({
+    url: z.string().optional(),
+    blur: z.number().default(100).catch(100),
+    color: z.string().default("#D5D5D5").catch("#D5D5D5")
+});
+
+export type BackgroundConfig = z.infer<typeof BackgroundConfig>;
+
 export const LayoutConfig = z.object({
     backgroundColor: z.string().default("#D5D5D5").catch("#D5D5D5")
 });
@@ -34,6 +42,7 @@ export const Instruction = z.object({
     header: TextConfig.optional(),
     body: TextConfig.optional(),
     picture: ImageConfig.optional(),
+    background: BackgroundConfig.optional(),
     layout: LayoutConfig.optional()
 })
 

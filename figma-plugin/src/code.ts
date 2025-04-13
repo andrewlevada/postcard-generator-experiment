@@ -1,4 +1,4 @@
-import { Instruction, ImageConfig, TextConfig } from "./schema";
+import { Instruction, ImageConfig, TextConfig, BackgroundConfig } from "./schema";
 import { loadApiToken } from "./token-loader"
 import { hexToRgb } from "./utils";
 
@@ -156,6 +156,8 @@ async function generatePostcard(instruction: Instruction): Promise<SceneNode> {
     const backgroundColor = instruction.layout?.backgroundColor || "#D5D5D5";
     postcardFrame.fills = [{type: 'SOLID', color: hexToRgb(backgroundColor)}];
 
+    if (instruction.background) await placeBackgroundObject(instruction.background, postcardFrame);
+
     const flexContainers: ContainerStore = {};
 
     if (instruction.header) await placeTextObject(instruction.header, postcardFrame, flexContainers);
@@ -165,6 +167,57 @@ async function generatePostcard(instruction: Instruction): Promise<SceneNode> {
     patchContainerPositions(flexContainers, postcardFrame);
 
     return postcardFrame;
+}
+
+async function placeBackgroundObject(backgroundConfig: BackgroundConfig, postcardFrame: FrameNode) {
+    // Create a frame for the background that covers the entire postcard
+    const backgroundFrame = figma.createFrame();
+    backgroundFrame.resize(POSTCARD_WIDTH, POSTCARD_HEIGHT);
+    backgroundFrame.x = 0;
+    backgroundFrame.y = 0;
+    
+    // Set the background color as fallback
+    backgroundFrame.fills = [{type: 'SOLID', color: hexToRgb(backgroundConfig.color || "#D5D5D5")}];
+    
+    // Add the background frame as the first child of the postcard frame
+    postcardFrame.insertChild(0, backgroundFrame);
+    
+    if (backgroundConfig.url) {
+        try {
+            // Fetch the image from the URL
+            let image;
+            // if (backgroundConfig.url.startsWith("data:image/")) {
+                // Handle base64 image
+                // const base64Data = backgroundConfig.url.split(",")[1];
+                // const imageData = base64ToUint8Array(base64Data);
+                // image = figma.createImage(imageData);
+            // } else {
+                // Fetch the image from the URL
+                const response = await fetch(backgroundConfig.url);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch background image: ${response.status} ${response.statusText}`);
+                }
+                const arrayBuffer = await response.arrayBuffer();
+                const imageData = new Uint8Array(arrayBuffer);
+                image = figma.createImage(imageData);
+            // }
+            
+            // Apply the image to the background frame
+            backgroundFrame.fills = [{type: 'IMAGE', imageHash: image.hash, scaleMode: 'FILL'}];
+
+            // Apply blur effect if specified
+            if (backgroundConfig.blur && backgroundConfig.blur > 0) {
+                backgroundFrame.effects = [{
+                    type: 'LAYER_BLUR',
+                    radius: backgroundConfig.blur,
+                    visible: true
+                }];
+            }
+        } catch (error) {
+            console.warn('Failed to load background image:', error);
+            // Keep the fallback color if image loading fails
+        }
+    }
 }
 
 async function placeTextObject(textConfig: TextConfig, postcardFrame: FrameNode, flexContainers: ContainerStore) {

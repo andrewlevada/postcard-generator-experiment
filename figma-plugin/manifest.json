@@ -10,7 +10,7 @@
   "networkAccess": {
     "allowedDomains": [
       "https://openrouter.ai",
-      "https://andrewlevada--poem-generator-poemgenerator-generate-poem.modal.run"
+      "https://andrewlevada--postcard-content-postcardcontentgenerator--6a7463.modal.run"
     ]
   }
 }

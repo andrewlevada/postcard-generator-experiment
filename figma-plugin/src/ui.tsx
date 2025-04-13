@@ -21,7 +21,7 @@ async function generatePostcardInstruction(data: FormData, apiToken: string): Pr
     },
     body: JSON.stringify({
       model: 'openai/gpt-4',
-      temperature: 1.1,
+      temperature: 1.2,
       messages: [
         {
           role: 'user',
@@ -39,24 +39,27 @@ async function generatePostcardInstruction(data: FormData, apiToken: string): Pr
   return result.choices[0].message.content;
 }
 
-async function generatePoem(theme: string, name: string): Promise<string> {
-  const url = `https://andrewlevada--poem-generator-poemgenerator-generate-poem.modal.run/?theme=${encodeURIComponent(theme)}&title=${encodeURIComponent(name)}`;
+async function generatePostcardContent(theme: string, name: string): Promise<{poem: string, background_image: string | null}> {
+  // Call the new combined API endpoint
+  const url = `https://andrewlevada--postcard-content-postcardcontentgenerator--6a7463.modal.run/?theme=${encodeURIComponent(theme)}&title=${encodeURIComponent(name)}&background_prompt=${encodeURIComponent(theme + " themed background for a postcard")}`;
   
   const response = await fetch(url);
   
   if (!response.ok) {
-    throw new Error(`Poem API call failed: ${response.statusText}`);
+    throw new Error(`Postcard content API call failed: ${response.statusText}`);
   }
   
   const result = await response.json();
-  const poem = result.poem || '';
-  return poem.replace(/\n\n/g, '\n');
+  return {
+    poem: (result.poem || '').replace(/\n\n/g, '\n'),
+    background_image: `data:image/png;base64,${result.background_image}`
+  };
 }
 
 export function App() {
   const [formData, setFormData] = React.useState<FormData>({
-    theme: 'День рождения',
-    name: 'Кот Крыжовник',
+    theme: 'Birthday',
+    name: 'Cat Mittens',
     imageFile: null
   });
   const [loading, setLoading] = React.useState(false);
@@ -88,23 +91,32 @@ export function App() {
         });
       }
 
-      // Fetch both the postcard instruction and the poem in parallel
-      const [instruction, poemText] = await Promise.all([
+      // Fetch both the postcard instruction and the content in parallel
+      const [instruction, content] = await Promise.all([
         generatePostcardInstruction(formData, apiToken),
-        generatePoem(formData.theme, formData.name)
+        generatePostcardContent(formData.theme, formData.name)
       ]);
       
       // Parse the instruction
       const parsedInstruction = JSON.parse(instruction);
 
-      if (poemText) {
-        parsedInstruction.body = { ...parsedInstruction.body, text: poemText };
+      if (content.poem) {
+        parsedInstruction.body = { ...parsedInstruction.body, text: content.poem };
       }
 
       if (imageUrl) {
         parsedInstruction.picture = { 
           ...parsedInstruction.picture,
           url: imageUrl
+        };
+      }
+
+      // Add background image if available
+      if (content.background_image) {
+        parsedInstruction.background = {
+          url: content.background_image,
+          blur: 100,
+          color: parsedInstruction.layout?.backgroundColor || "#D5D5D5"
         };
       }
       
