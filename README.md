@@ -29,6 +29,7 @@ This repository is organized as a monorepo with the following components:
 - `/figma-plugin` - Figma plugin implementation
 - `/experiments` - Jupyter notebooks and experimental code
 - `/datasets` - datasets used for fine-tuning
+- `Report.pdf` - research paper of project
 
 ## How to Run Locally
 
