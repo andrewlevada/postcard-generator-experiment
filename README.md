@@ -28,6 +28,7 @@ This repository is organized as a monorepo with the following components:
   - `/modal/background-diffusion` - Serverless deployment of the background generation model using Stable Diffusion
 - `/figma-plugin` - Figma plugin implementation
 - `/experiments` - Jupyter notebooks and experimental code
+- `/datasets` - datasets used for fine-tuning
 
 ## How to Run Locally
 
