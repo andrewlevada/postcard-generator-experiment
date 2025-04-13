@@ -14,7 +14,7 @@ The system consists of three main components:
 2. **Background Generator**: A custom-trained diffusion model for thematic background generation
 3. **Figma Layout Composer**: A plugin utilizing the Figma API for dynamic visual element arrangement
 
-![Structure](images/scheme.png)
+<img src="images/scheme.png" alt="Structure" width="500"/>
 
 ## Using the plugin
 
