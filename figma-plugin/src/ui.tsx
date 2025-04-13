@@ -5,6 +5,7 @@ import { POSTCARD_PROMPT } from './prompt';
 interface FormData {
   theme: string;
   name: string;
+  imageFile: File | null;
 }
 
 async function generatePostcardInstruction(data: FormData, apiToken: string): Promise<string> {
@@ -55,7 +56,8 @@ async function generatePoem(theme: string, name: string): Promise<string> {
 export function App() {
   const [formData, setFormData] = React.useState<FormData>({
     theme: 'День рождения',
-    name: 'Кот Крыжовник'
+    name: 'Кот Крыжовник',
+    imageFile: null
   });
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -76,6 +78,16 @@ export function App() {
     setError(null);
 
     try {
+      let imageUrl = '';
+      if (formData.imageFile) {
+        // Convert the file to a data URL
+        imageUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(formData.imageFile as Blob);
+        });
+      }
+
       // Fetch both the postcard instruction and the poem in parallel
       const [instruction, poemText] = await Promise.all([
         generatePostcardInstruction(formData, apiToken),
@@ -87,6 +99,13 @@ export function App() {
 
       if (poemText) {
         parsedInstruction.body = { ...parsedInstruction.body, text: poemText };
+      }
+
+      if (imageUrl) {
+        parsedInstruction.picture = { 
+          ...parsedInstruction.picture,
+          url: imageUrl
+        };
       }
       
       parent.postMessage({ 
@@ -136,6 +155,21 @@ export function App() {
           value={formData.name}
           onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
           required
+          style={{
+            padding: '8px',
+            borderRadius: '12px',
+            border: '1px solid #ccc'
+          }}
+        />
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <label style={{ textAlign: 'center', width: '100%' }} htmlFor="image">Upload Image:</label>
+        <input
+          id="image"
+          type="file"
+          accept="image/*"
+          onChange={(e) => setFormData(prev => ({ ...prev, imageFile: e.target.files?.[0] || null }))}
           style={{
             padding: '8px',
             borderRadius: '12px',

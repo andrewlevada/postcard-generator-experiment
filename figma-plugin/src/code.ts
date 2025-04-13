@@ -5,10 +5,10 @@ import { hexToRgb } from "./utils";
 type ContainerStore = Record<string, FrameNode>;
 
 // Hardcoded constants
-const POSTCARD_WIDTH = 300;
-const POSTCARD_HEIGHT = 400;
-const MARGIN = 20;
-const ITEM_SPACING = 4;
+const POSTCARD_WIDTH = 400;
+const POSTCARD_HEIGHT = 520;
+const MARGIN = 32;
+const ITEM_SPACING = 10;
 
 // Show the UI
 figma.showUI(__html__, { width: 300, height: 560 });
@@ -63,15 +63,15 @@ figma.ui.onmessage = async (msg) => {
 
 function calculatePosition(position: string, frameWidth: number, frameHeight: number, elementWidth: number, elementHeight: number) {
     const positions = {
-        'top-left': { x: 20, y: 20 },
-        'top-middle': { x: (frameWidth - elementWidth) / 2, y: 20 },
-        'top-right': { x: frameWidth - elementWidth - 20, y: 20 },
-        'middle-left': { x: 20, y: (frameHeight - elementHeight) / 2 },
+        'top-left': { x: MARGIN, y: MARGIN },
+        'top-middle': { x: (frameWidth - elementWidth) / 2, y: MARGIN },
+        'top-right': { x: frameWidth - elementWidth - MARGIN, y: MARGIN },
+        'middle-left': { x: MARGIN, y: (frameHeight - elementHeight) / 2 },
         'middle-middle': { x: (frameWidth - elementWidth) / 2, y: (frameHeight - elementHeight) / 2 },
-        'middle-right': { x: frameWidth - elementWidth - 20, y: (frameHeight - elementHeight) / 2 },
-        'bottom-left': { x: 20, y: frameHeight - elementHeight - 20 },
-        'bottom-middle': { x: (frameWidth - elementWidth) / 2, y: frameHeight - elementHeight - 20 },
-        'bottom-right': { x: frameWidth - elementWidth - 20, y: frameHeight - elementHeight - 20 }
+        'middle-right': { x: frameWidth - elementWidth - MARGIN, y: (frameHeight - elementHeight) / 2 },
+        'bottom-left': { x: MARGIN, y: frameHeight - elementHeight - MARGIN },
+        'bottom-middle': { x: (frameWidth - elementWidth) / 2, y: frameHeight - elementHeight - MARGIN },
+        'bottom-right': { x: frameWidth - elementWidth - MARGIN, y: frameHeight - elementHeight - MARGIN }
     };
 
     return positions[position as keyof typeof positions];

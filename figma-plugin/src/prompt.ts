@@ -39,6 +39,7 @@ Guidelines:
 6. Ensure all text is readable
 7. Select a background color that is subtle and contrasts with the header and body text
 8. When position of two elements is the same, they are stacked vertically. This is generally good
+9. You must place body and picture in the same position
 
 Theme: {theme}
 Person's Name: {name}
